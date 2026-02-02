@@ -7,19 +7,52 @@ const INITIAL_GOAL = 100000; // Increased goal for renovation
 const SEED_DATA: Donation[] = [];
 
 export const getStoredData = (): AppState => {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  let donations: Donation[] = [];
-  
-  if (stored) {
-    donations = JSON.parse(stored).donations;
-  } else {
-    donations = SEED_DATA;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      donations,
+  if (typeof window === "undefined") {
+    return {
+      donations: [],
       totalCollected: 0,
       goalAmount: INITIAL_GOAL
-    }));
+    };
   }
+
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    let donations: Donation[] = [];
+
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      donations = parsed.donations || [];
+    } else {
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          donations: [],
+          totalCollected: 0,
+          goalAmount: INITIAL_GOAL
+        })
+      );
+    }
+
+    const verifiedDonations = donations.filter(d => d.status === "verified");
+    const totalCollected = verifiedDonations.reduce(
+      (sum, d) => sum + d.amount,
+      0
+    );
+
+    return {
+      donations,
+      totalCollected,
+      goalAmount: INITIAL_GOAL
+    };
+  } catch (err) {
+    return {
+      donations: [],
+      totalCollected: 0,
+      goalAmount: INITIAL_GOAL
+    };
+  }
+};
+
 
   // Recalculate total based ONLY on verified donations
   const verifiedDonations = donations.filter(d => d.status === 'verified');
